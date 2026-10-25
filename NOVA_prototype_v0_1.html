@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#111827">
+<title>NOVA — Prototype vocal</title>
+<style>
+:root{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#f8fafc;background:#0b1220}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+main{width:min(100%,440px);background:#111c30;border:1px solid #27364f;border-radius:26px;padding:25px;box-shadow:0 20px 60px #0005}
+.logo{width:66px;height:66px;border-radius:20px;background:#203b63;display:grid;place-items:center;font-size:28px;font-weight:800;letter-spacing:1px;margin-bottom:18px}
+h1{font-size:30px;margin:0 0 5px} .sub{color:#a9bad2;margin:0 0 22px}
+.status{border-radius:14px;background:#0b1425;padding:14px;margin:16px 0;color:#cbd5e1;min-height:52px}
+button{width:100%;border:0;border-radius:14px;padding:15px 12px;font-size:16px;font-weight:700;cursor:pointer;margin:6px 0}
+.primary{background:#8bc5ff;color:#08203a}.secondary{background:#24344d;color:#f8fafc}
+.small{font-size:13px;color:#9fb0c8;line-height:1.5;margin-top:18px}
+#heard{color:#fff;font-weight:650}
+</style>
+</head>
+<body>
+<main>
+  <div class="logo" aria-hidden="true">N</div>
+  <h1>NOVA</h1>
+  <p class="sub">Prototype vocal · Version 0.1</p>
+  <p>Essayez une commande vocale comme <strong>« ouvre YouTube »</strong> ou <strong>« recherche musique relaxante »</strong>.</p>
+  <button class="primary" id="listen">🎙️ Parler à NOVA</button>
+  <button class="secondary" id="youtube">▶ Ouvrir YouTube</button>
+  <div class="status" role="status" aria-live="polite" id="status">Prêt. Appuyez sur « Parler à NOVA » pour commencer.</div>
+  <p>Commande reconnue : <span id="heard">—</span></p>
+  <p class="small">Prototype de démonstration : la reconnaissance vocale dépend du navigateur et peut nécessiter une connexion Internet. Cette page ne s'active pas toute seule et n'écoute pas lorsque vous la fermez ou verrouillez le téléphone. Elle n'accède pas à vos contacts.</p>
+</main>
+<script>
+const statusEl = document.getElementById('status');
+const heardEl = document.getElementById('heard');
+const listenBtn = document.getElementById('listen');
+function openYouTube(query='') {
+  const url = query
+    ? 'https://www.youtube.com/results?search_query=' + encodeURIComponent(query)
+    : 'https://www.youtube.com/';
+  window.location.href = url;
+}
+document.getElementById('youtube').addEventListener('click', () => openYouTube());
+listenBtn.addEventListener('click', () => {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    statusEl.textContent = 'La reconnaissance vocale n’est pas disponible dans ce navigateur. Essayez d’ouvrir NOVA dans Chrome avec Internet, ou utilisez « Ouvrir YouTube » pour ce premier test.';
+    return;
+  }
+  const recognition = new SR();
+  recognition.lang = 'fr-FR';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+  statusEl.textContent = 'J’écoute… Parlez maintenant.';
+  listenBtn.disabled = true;
+  recognition.onresult = (event) => {
+    const phrase = event.results[0][0].transcript.trim();
+    heardEl.textContent = phrase;
+    const normalized = phrase.toLocaleLowerCase('fr').replace(/[’']/g, ' ');
+    if (normalized.includes('youtube') && (normalized.includes('ouvre') || normalized.includes('lance') || normalized.includes('recherche') || normalized.includes('cherche'))) {
+      const q = normalized.match(/(?:recherche|cherche)\s+(.+)/);
+      statusEl.textContent = q ? 'Ouverture des résultats YouTube pour : ' + q[1] : 'Ouverture de YouTube…';
+      setTimeout(() => openYouTube(q ? q[1] : ''), 500);
+    } else if (normalized.includes('ouvre') && normalized.includes('youtube')) {
+      statusEl.textContent = 'Ouverture de YouTube…';
+      setTimeout(() => openYouTube(), 500);
+    } else if (normalized.includes('recherche') || normalized.includes('cherche')) {
+      const q = normalized.replace(/^(nova\s*)?(recherche|cherche)\s*/, '').replace(/\s+sur youtube$/, '');
+      statusEl.textContent = 'Recherche sur YouTube : ' + q;
+      setTimeout(() => openYouTube(q), 500);
+    } else {
+      statusEl.textContent = 'J’ai entendu : « ' + phrase + ' ». Pour ce prototype, dites « ouvre YouTube » ou « recherche [sujet] ».';
+    }
+  };
+  recognition.onerror = (event) => {
+    statusEl.textContent = event.error === 'not-allowed'
+      ? 'Accès au microphone refusé. Autorisez le microphone pour ce site dans les paramètres du navigateur.'
+      : 'La reconnaissance vocale a échoué (' + event.error + '). Vérifiez Internet et réessayez.';
+  };
+  recognition.onend = () => { listenBtn.disabled = false; };
+  try { recognition.start(); } catch (e) {
+    listenBtn.disabled = false;
+    statusEl.textContent = 'Impossible de démarrer l’écoute. Réessayez dans un navigateur compatible.';
+  }
+});
+</script>
+</body>
+</html>
