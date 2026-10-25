@@ -4,84 +4,331 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#111827">
-<title>NOVA — Prototype vocal</title>
+<title>NOVA — Assistant vocal</title>
+
 <style>
-:root{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#f8fafc;background:#0b1220}
-*{box-sizing:border-box}
-body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-main{width:min(100%,440px);background:#111c30;border:1px solid #27364f;border-radius:26px;padding:25px;box-shadow:0 20px 60px #0005}
-.logo{width:66px;height:66px;border-radius:20px;background:#203b63;display:grid;place-items:center;font-size:28px;font-weight:800;letter-spacing:1px;margin-bottom:18px}
-h1{font-size:30px;margin:0 0 5px} .sub{color:#a9bad2;margin:0 0 22px}
-.status{border-radius:14px;background:#0b1425;padding:14px;margin:16px 0;color:#cbd5e1;min-height:52px}
-button{width:100%;border:0;border-radius:14px;padding:15px 12px;font-size:16px;font-weight:700;cursor:pointer;margin:6px 0}
-.primary{background:#8bc5ff;color:#08203a}.secondary{background:#24344d;color:#f8fafc}
-.small{font-size:13px;color:#9fb0c8;line-height:1.5;margin-top:18px}
-#heard{color:#fff;font-weight:650}
+:root {
+  font-family: system-ui, sans-serif;
+  color: #f8fafc;
+  background: #0b1220;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+main {
+  width: min(100%, 440px);
+  background: #111c30;
+  border: 1px solid #27364f;
+  border-radius: 26px;
+  padding: 25px;
+  box-shadow: 0 20px 60px #0005;
+}
+.logo {
+  width: 66px;
+  height: 66px;
+  border-radius: 20px;
+  background: #203b63;
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+  font-weight: 800;
+  margin-bottom: 18px;
+}
+h1 { font-size: 30px; margin: 0 0 5px; }
+.sub { color: #a9bad2; margin-bottom: 22px; }
+.status {
+  border-radius: 14px;
+  background: #0b1425;
+  padding: 14px;
+  margin: 16px 0;
+  color: #cbd5e1;
+  min-height: 52px;
+}
+button {
+  width: 100%;
+  border: 0;
+  border-radius: 14px;
+  padding: 15px 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  margin: 6px 0;
+}
+.primary { background: #8bc5ff; color: #08203a; }
+.secondary { background: #24344d; color: #f8fafc; }
+.small { font-size: 13px; color: #9fb0c8; line-height: 1.5; }
+#heard { color: white; font-weight: 650; }
 </style>
 </head>
+
 <body>
 <main>
   <div class="logo" aria-hidden="true">N</div>
+
   <h1>NOVA</h1>
-  <p class="sub">Prototype vocal · Version 0.1</p>
-  <p>Essayez une commande vocale comme <strong>« ouvre YouTube »</strong> ou <strong>« recherche musique relaxante »</strong>.</p>
-  <button class="primary" id="listen">🎙️ Parler à NOVA</button>
-  <button class="secondary" id="youtube">▶ Ouvrir YouTube</button>
-  <div class="status" role="status" aria-live="polite" id="status">Prêt. Appuyez sur « Parler à NOVA » pour commencer.</div>
+  <p class="sub">Assistant vocal · Prototype 0.2</p>
+
+  <p>
+    Dites par exemple :
+    <strong>Open YouTube</strong>,
+    <strong>Open WhatsApp</strong>,
+    ou <strong>Ouvre Google Maps</strong>.
+  </p>
+
+  <button class="primary" id="listen">
+    🎙️ Parler à NOVA
+  </button>
+
+  <button class="secondary" id="youtube">
+    ▶ Ouvrir YouTube
+  </button>
+
+  <div class="status" id="status" role="status" aria-live="polite">
+    NOVA est prête. Appuyez sur le microphone.
+  </div>
+
   <p>Commande reconnue : <span id="heard">—</span></p>
-  <p class="small">Prototype de démonstration : la reconnaissance vocale dépend du navigateur et peut nécessiter une connexion Internet. Cette page ne s'active pas toute seule et n'écoute pas lorsque vous la fermez ou verrouillez le téléphone. Elle n'accède pas à vos contacts.</p>
+
+  <p class="small">
+    La reconnaissance vocale dépend du navigateur et d'Internet.
+    L'ouverture directe d'une application dépend d'Android,
+    de Chrome et de l'application concernée.
+  </p>
 </main>
+
 <script>
 const statusEl = document.getElementById('status');
 const heardEl = document.getElementById('heard');
 const listenBtn = document.getElementById('listen');
-function openYouTube(query='') {
-  const url = query
-    ? 'https://www.youtube.com/results?search_query=' + encodeURIComponent(query)
-    : 'https://www.youtube.com/';
+
+/*
+ * Applications prises en charge.
+ * Les noms sont recherchés dans la commande reconnue.
+ */
+const apps = [
+  {
+    names: ['youtube'],
+    label: 'YouTube',
+    packageName: 'com.google.android.youtube',
+    url: 'https://www.youtube.com/'
+  },
+  {
+    names: ['whatsapp'],
+    label: 'WhatsApp',
+    packageName: 'com.whatsapp',
+    url: 'https://www.whatsapp.com/'
+  },
+  {
+    names: ['facebook'],
+    label: 'Facebook',
+    packageName: 'com.facebook.katana',
+    url: 'https://www.facebook.com/'
+  },
+  {
+    names: ['instagram'],
+    label: 'Instagram',
+    packageName: 'com.instagram.android',
+    url: 'https://www.instagram.com/'
+  },
+  {
+    names: ['google maps', 'maps', 'google map'],
+    label: 'Google Maps',
+    packageName: 'com.google.android.apps.maps',
+    url: 'https://maps.google.com/'
+  },
+  {
+    names: ['gmail', 'google mail'],
+    label: 'Gmail',
+    packageName: 'com.google.android.gm',
+    url: 'https://mail.google.com/'
+  },
+  {
+    names: ['spotify'],
+    label: 'Spotify',
+    packageName: 'com.spotify.music',
+    url: 'https://open.spotify.com/'
+  },
+  {
+    names: ['telegram'],
+    label: 'Telegram',
+    packageName: 'org.telegram.messenger',
+    url: 'https://telegram.org/'
+  },
+  {
+    names: ['tiktok', 'tik tok'],
+    label: 'TikTok',
+    packageName: 'com.zhiliaoapp.musically',
+    url: 'https://www.tiktok.com/'
+  }
+];
+
+function normalize(text) {
+  return text
+    .toLocaleLowerCase('fr-FR')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[’']/g, ' ')
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function openWeb(url) {
   window.location.href = url;
 }
-document.getElementById('youtube').addEventListener('click', () => openYouTube());
-listenBtn.addEventListener('click', () => {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) {
-    statusEl.textContent = 'La reconnaissance vocale n’est pas disponible dans ce navigateur. Essayez d’ouvrir NOVA dans Chrome avec Internet, ou utilisez « Ouvrir YouTube » pour ce premier test.';
+
+function openApp(app) {
+  statusEl.textContent =
+    'Tentative d’ouverture de ' + app.label + '…';
+
+  /*
+   * Android intent : demande à Chrome de lancer
+   * l'application si elle est installée et autorisée.
+   */
+  const intentUrl =
+    'intent://' +
+    app.url.replace(/^https?:\/\//, '') +
+    '#Intent;scheme=https;package=' +
+    app.packageName +
+    ';S.browser_fallback_url=' +
+    encodeURIComponent(app.url) +
+    ';end';
+
+  window.location.href = intentUrl;
+}
+
+function handleCommand(rawCommand) {
+  const command = normalize(rawCommand);
+
+  heardEl.textContent = rawCommand;
+
+  /*
+   * Recherche YouTube :
+   * "recherche musique sur YouTube"
+   * "cherche musique sur YouTube"
+   */
+  const searchMatch = command.match(
+    /^(?:(?:nova|open|ouvre|lance)\s+)*(?:recherche|cherche|search)\s+(.+)$/
+  );
+
+  if (searchMatch) {
+    let query = searchMatch[1]
+      .replace(/\s+sur youtube$/, '')
+      .trim();
+
+    if (query) {
+      statusEl.textContent =
+        'Recherche YouTube : ' + query;
+
+      setTimeout(() => {
+        openWeb(
+          'https://www.youtube.com/results?search_query=' +
+          encodeURIComponent(query)
+        );
+      }, 400);
+
+      return;
+    }
+  }
+
+  /*
+   * Détection d'une application.
+   * Accepte notamment "Open YouTube",
+   * "Ouvre WhatsApp" et "Lance Instagram".
+   */
+  const app = apps.find(item =>
+    item.names.some(name =>
+      (' ' + command + ' ').includes(' ' + name + ' ')
+    )
+  );
+
+  if (app) {
+    const actionWords =
+      /\b(open|ouvre|ouvrir|lance|lancer|demarre|demarrer|start|launch|application|app)\b/;
+
+    if (!actionWords.test(command)) {
+      statusEl.textContent =
+        'Dites « Open ' + app.label +
+        ' » ou « Ouvre ' + app.label + ' ».';
+      return;
+    }
+
+    openApp(app);
     return;
   }
-  const recognition = new SR();
+
+  statusEl.textContent =
+    'Commande non reconnue. Essayez « Open YouTube », ' +
+    '« Open WhatsApp » ou « Ouvre Google Maps ».';
+}
+
+/*
+ * Le bouton YouTube conserve sa fonction.
+ */
+document.getElementById('youtube').addEventListener(
+  'click',
+  () => openWeb('https://www.youtube.com/')
+);
+
+/*
+ * Reconnaissance vocale.
+ */
+listenBtn.addEventListener('click', () => {
+  const SpeechRecognition =
+    window.SpeechRecognition ||
+    window.webkitSpeechRecognition;
+
+  if (!SpeechRecognition) {
+    statusEl.textContent =
+      'Reconnaissance vocale indisponible. ' +
+      'Essayez Chrome avec une connexion Internet.';
+    return;
+  }
+
+  const recognition = new SpeechRecognition();
+
   recognition.lang = 'fr-FR';
   recognition.interimResults = false;
   recognition.maxAlternatives = 1;
+
   statusEl.textContent = 'J’écoute… Parlez maintenant.';
   listenBtn.disabled = true;
-  recognition.onresult = (event) => {
-    const phrase = event.results[0][0].transcript.trim();
-    heardEl.textContent = phrase;
-    const normalized = phrase.toLocaleLowerCase('fr').replace(/[’']/g, ' ');
-    if (normalized.includes('youtube') && (normalized.includes('ouvre') || normalized.includes('lance') || normalized.includes('recherche') || normalized.includes('cherche'))) {
-      const q = normalized.match(/(?:recherche|cherche)\s+(.+)/);
-      statusEl.textContent = q ? 'Ouverture des résultats YouTube pour : ' + q[1] : 'Ouverture de YouTube…';
-      setTimeout(() => openYouTube(q ? q[1] : ''), 500);
-    } else if (normalized.includes('ouvre') && normalized.includes('youtube')) {
-      statusEl.textContent = 'Ouverture de YouTube…';
-      setTimeout(() => openYouTube(), 500);
-    } else if (normalized.includes('recherche') || normalized.includes('cherche')) {
-      const q = normalized.replace(/^(nova\s*)?(recherche|cherche)\s*/, '').replace(/\s+sur youtube$/, '');
-      statusEl.textContent = 'Recherche sur YouTube : ' + q;
-      setTimeout(() => openYouTube(q), 500);
+
+  recognition.onresult = event => {
+    const phrase =
+      event.results[0][0].transcript.trim();
+
+    handleCommand(phrase);
+  };
+
+  recognition.onerror = event => {
+    if (event.error === 'not-allowed') {
+      statusEl.textContent =
+        'Accès au microphone refusé. ' +
+        'Autorisez le microphone dans Chrome.';
     } else {
-      statusEl.textContent = 'J’ai entendu : « ' + phrase + ' ». Pour ce prototype, dites « ouvre YouTube » ou « recherche [sujet] ».';
+      statusEl.textContent =
+        'Erreur vocale : ' + event.error +
+        '. Vérifiez Internet puis réessayez.';
     }
   };
-  recognition.onerror = (event) => {
-    statusEl.textContent = event.error === 'not-allowed'
-      ? 'Accès au microphone refusé. Autorisez le microphone pour ce site dans les paramètres du navigateur.'
-      : 'La reconnaissance vocale a échoué (' + event.error + '). Vérifiez Internet et réessayez.';
-  };
-  recognition.onend = () => { listenBtn.disabled = false; };
-  try { recognition.start(); } catch (e) {
+
+  recognition.onend = () => {
     listenBtn.disabled = false;
-    statusEl.textContent = 'Impossible de démarrer l’écoute. Réessayez dans un navigateur compatible.';
+  };
+
+  try {
+    recognition.start();
+  } catch (error) {
+    listenBtn.disabled = false;
+    statusEl.textContent =
+      'Impossible de démarrer le microphone. Réessayez.';
   }
 });
 </script>
